@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pink Panther - Gestione Turni</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --card-bg: #121212;
+            --card-border: #222222;
+            --accent-pink: #e65c9c;
+            --text-main: #ffffff;
+            --text-secondary: #999999;
+            --green-marian: #25d366;
+            --red-riposo: #ff4d4d;
+            --blue-sasa: #00b0ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        h1 {
+            color: var(--accent-pink);
+            font-size: 24px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        select {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--card-border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            background-color: var(--card-bg);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--card-border);
+            font-size: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .dot-sasa { background-color: var(--blue-sasa); }
+        .dot-marian { background-color: var(--green-marian); }
+        .dot-riposo { background-color: var(--red-riposo); }
+
+        .week-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .week-header {
+            background-color: #1a1a1a;
+            padding: 10px 15px;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--accent-pink);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .day-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .day-row:last-child {
+            border-bottom: none;
+        }
+
+        .day-date {
+            font-size: 14px;
+        }
+
+        .day-name {
+            font-weight: 600;
+        }
+
+        .shifts {
+            display: flex;
+            gap: 8px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge-sasa { background-color: rgba(0, 176, 255, 0.15); color: var(--blue-sasa); border: 1px solid var(--blue-sasa); }
+        .badge-marian { background-color: rgba(37, 211, 102, 0.15); color: var(--green-marian); border: 1px solid var(--green-marian); }
+        .badge-riposo { background-color: rgba(255, 77, 77, 0.15); color: var(--red-riposo); border: 1px solid var(--red-riposo); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Pink Panther</h1>
+        <div class="controls">
+            <select id="monthSelect" onchange="renderCalendar()">
+                <option value="8" selected>Settembre 2026</option>
+                <option value="9">Ottobre 2026</option>
+                <option value="10">Novembre 2026</option>
+                <option value="11">Dicembre 2026</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="legend">
+        <div class="legend-item"><div class="dot dot-sasa"></div> Sasa</div>
+        <div class="legend-item"><div class="dot dot-marian"></div> Marian</div>
+        <div class="legend-item"><div class="dot dot-riposo"></div> Riposo</div>
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
+<script>
+    function renderCalendar() {
+        const monthSelect = document.getElementById('monthSelect');
+        const month = parseInt(monthSelect.value);
+        const year = 2026;
+        const container = document.getElementById('calendar');
+        container.innerHTML = '';
+
+        // Data di partenza per il ciclo dei turni
+        const baseDate = new Date(2026, 8, 1);
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        let currentWeekCard = null;
+        let weekDaysContainer = null;
+
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        const monthNames = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
+        let weekCount = 1;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month, day);
+            const dayOfWeek = date.getDay();
+
+            // Crea nuova scheda settimana ad ogni Lunedì o al primo giorno del mese
+            if (dayOfWeek === 1 || day === 1 || !currentWeekCard) {
+                currentWeekCard = document.createElement('div');
+                currentWeekCard.className = 'week-card';
+
+                const weekHeader = document.createElement('div');
+                weekHeader.className = 'week-header';
+                weekHeader.innerText = `Settimana ${weekCount++}`;
+                currentWeekCard.appendChild(weekHeader);
+
+                weekDaysContainer = document.createElement('div');
+                currentWeekCard.appendChild(weekDaysContainer);
+                container.appendChild(currentWeekCard);
+            }
+
+            const row = document.createElement('div');
+            row.className = 'day-row';
+
+            const dateText = `${dayNames[dayOfWeek]} ${day} ${monthNames[month]}`;
+            
+            // Calcolo turni rotativi
+            const diffDays = Math.floor((date - baseDate) / (1000 * 60 * 60 * 24));
+            let sasaShift = "", marianShift = "";
+
+            if (dayOfWeek === 1) { // Lunedì riposo fisso per tutti
+                sasaShift = '<span class="badge badge-riposo">Riposo</span>';
+                marianShift = '<span class="badge badge-riposo">Riposo</span>';
+            } else {
+                if (diffDays % 2 === 0) {
+                    sasaShift = '<span class="badge badge-sasa">Mattina</span>';
+                    marianShift = '<span class="badge badge-marian">Pomeriggio</span>';
+                } else {
+                    sasaShift = '<span class="badge badge-sasa">Pomeriggio</span>';
+                    marianShift = '<span class="badge badge-marian">Mattina</span>';
+                }
+            }
+
+            row.innerHTML = `
+                <div class="day-date"><span class="day-name">${dayNames[dayOfWeek]}</span> ${day}</div>
+                <div class="shifts">
+                    ${sasaShift}
+                    ${marianShift}
+                </div>
+            `;
+
+            weekDaysContainer.appendChild(row);
+        }
+    }
+
+    // Inizializza
+    renderCalendar();
+</script>
+
+</body>
+</html>
