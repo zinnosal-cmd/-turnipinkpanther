@@ -576,9 +576,11 @@
         function onWeekChange() {
             var selectedWeek = document.getElementById('selectWeek').value;
 
+            // Salva solo in locale per chi sta semplicemente guardando i turni
             localStorage.setItem('pk_last_edited_week', selectedWeek);
 
-            if (window.syncSaveCurrentWeek) {
+            // Sincronizza nel Cloud per tutti SOLO SE si è sbloccata la modalità Gestore
+            if (isEditMode && window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(selectedWeek);
             }
 
@@ -677,8 +679,8 @@
 
         function updateShiftType(staff, dayIdx, value) {
             var weekStartIso = document.getElementById('selectWeek').value;
-            localStorage.setItem('pk_last_edited_week', weekStartIso);
 
+            // Quando si modifica un turno, la settimana diventa ufficialmente quella predefinita globale
             if (window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(weekStartIso);
             }
@@ -723,8 +725,8 @@
             var h = getSelectedWheelValue('wheelHours');
             var m = getSelectedWheelValue('wheelMinutes');
             var weekStartIso = document.getElementById('selectWeek').value;
-            localStorage.setItem('pk_last_edited_week', weekStartIso);
 
+            // Quando si modifica l'orario, la settimana diventa ufficialmente quella predefinita globale
             if (window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(weekStartIso);
             }
@@ -827,7 +829,6 @@
 
         initFilters();
         
-        // Se c'era una settimana salvata in locale prima che Firestore risponda, la applichiamo subito
         var savedWeekLocal = localStorage.getItem('pk_last_edited_week');
         if (savedWeekLocal) {
             applySelectedWeek(savedWeekLocal);
