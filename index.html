@@ -369,7 +369,7 @@
             </div>
             <div class="form-group">
                 <label>Settimana Reale</label>
-                <select id="selectWeek" onchange="renderTable()"></select>
+                <select id="selectWeek" onchange="onWeekChange()"></select>
             </div>
             <div class="form-group">
                 <label>Cerca Dipendente</label>
@@ -432,7 +432,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // CONFIGURAZIONE FIRESTORE REALE
         const firebaseConfig = {
             apiKey: "AIzaSyBEFwdiVAs7-Lu6A4JRQkLjLvPoLiYfHNI",
             authDomain: "turni-pink-panther.firebaseapp.com",
@@ -442,15 +441,13 @@
             appId: "1:123215573279:web:c7c39fcd9b08c2b686802a"
         };
 
-        // Inizializza Firebase e Firestore
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Documenti di riferimento nella collezione 'app_data'
         const docShifts = doc(db, 'app_data', 'shiftsData');
         const docStaff = doc(db, 'app_data', 'staffList');
+        const docConfig = doc(db, 'app_data', 'config');
 
-        // Ascolto in tempo reale per i turni
         onSnapshot(docShifts, (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.data();
@@ -460,11 +457,8 @@
             document.getElementById('cloudStatus').innerText = "Firestore Live";
             document.getElementById('cloudStatus').classList.add('online');
             window.renderTable();
-        }, (error) => {
-            console.error("Errore sync Firestore (shifts):", error);
         });
 
-        // Ascolto in tempo reale per il personale
         onSnapshot(docStaff, (snapshot) => {
             if (snapshot.exists()) {
                 const listData = snapshot.data();
@@ -474,25 +468,32 @@
                 }
             }
             window.renderTable();
-        }, (error) => {
-            console.error("Errore sync Firestore (staff):", error);
         });
 
-        // Funzioni globali per salvataggio su Firestore
-        window.syncSaveShifts = async function(data) {
-            try {
-                await setDoc(docShifts, data);
-            } catch (e) {
-                console.error("Errore salvataggio turni su Firestore:", e);
+        onSnapshot(docConfig, (snapshot) => {
+            if (snapshot.exists()) {
+                const cfg = snapshot.data();
+
+                if (cfg && cfg.selectedWeek) {
+                    localStorage.setItem('pk_last_edited_week', cfg.selectedWeek);
+
+                    if (window.applySelectedWeek) {
+                        window.applySelectedWeek(cfg.selectedWeek);
+                    }
+                }
             }
+        });
+
+        window.syncSaveShifts = async function(data) {
+            try { await setDoc(docShifts, data); } catch (e) { console.error(e); }
         };
 
         window.syncSaveStaff = async function(list) {
-            try {
-                await setDoc(docStaff, { list: list });
-            } catch (e) {
-                console.error("Errore salvataggio staff su Firestore:", e);
-            }
+            try { await setDoc(docStaff, { list: list }); } catch (e) { console.error(e); }
+        };
+
+        window.syncSaveCurrentWeek = async function(weekIso) {
+            try { await setDoc(docConfig, { selectedWeek: weekIso }); } catch (e) { console.error(e); }
         };
     </script>
 
@@ -542,7 +543,8 @@
             var currentMonday = new Date(year, month, 1 + diffToMonday);
             var lastDayOfMonth = new Date(year, month + 1, 0);
 
-            var lastEditedWeek = localStorage.getItem('pk_last_edited_week') || "";
+            var savedWeek = localStorage.getItem('pk_last_edited_week') || "";
+            var selectedVal = "";
 
             while (currentMonday <= lastDayOfMonth) {
                 var sunday = new Date(currentMonday);
@@ -555,11 +557,15 @@
                 opt.innerText = "Dal " + currentMonday.getDate() + " " + getMonthNameShort(currentMonday.getMonth()) + " al " + sunday.getDate() + " " + getMonthNameShort(sunday.getMonth());
                 weekSelect.appendChild(opt);
 
+                if (isoString === savedWeek) {
+                    selectedVal = savedWeek;
+                }
+
                 currentMonday.setDate(currentMonday.getDate() + 7);
             }
 
-            if (lastEditedWeek && weekSelect.querySelector('option[value="' + lastEditedWeek + '"]')) {
-                weekSelect.value = lastEditedWeek;
+            if (selectedVal && weekSelect.querySelector('option[value="' + selectedVal + '"]')) {
+                weekSelect.value = selectedVal;
             }
         }
 
@@ -567,11 +573,45 @@
             return ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"][m];
         }
 
-        function renderTable() {
-            var weekStartIso = document.getElementById('selectWeek').value;
-            if (!weekStartIso) return;
+        function onWeekChange() {
+            var selectedWeek = document.getElementById('selectWeek').value;
 
-            localStorage.setItem('pk_last_edited_week', weekStartIso);
+            localStorage.setItem('pk_last_edited_week', selectedWeek);
+
+            if (window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(selectedWeek);
+            }
+
+            renderTable();
+        }
+
+        function applySelectedWeek(weekIso) {
+            if (!weekIso) return;
+
+            var parts = weekIso.split('-');
+            var year = parseInt(parts[0]);
+            var month = parseInt(parts[1]) - 1;
+
+            document.getElementById('selectYear').value = year;
+            document.getElementById('selectMonth').value = month;
+
+            populateWeeks();
+
+            var weekSelect = document.getElementById('selectWeek');
+
+            if (weekSelect.querySelector('option[value="' + weekIso + '"]')) {
+                weekSelect.value = weekIso;
+            }
+
+            renderTable();
+        }
+
+        window.applySelectedWeek = applySelectedWeek;
+
+        function renderTable() {
+            var weekSelect = document.getElementById('selectWeek');
+            var weekStartIso = weekSelect.value;
+            if (!weekStartIso) return;
 
             var parts = weekStartIso.split('-');
             var startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -637,6 +677,12 @@
 
         function updateShiftType(staff, dayIdx, value) {
             var weekStartIso = document.getElementById('selectWeek').value;
+            localStorage.setItem('pk_last_edited_week', weekStartIso);
+
+            if (window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(weekStartIso);
+            }
+
             if (!window.shiftsDataGlobal[weekStartIso]) window.shiftsDataGlobal[weekStartIso] = {};
             if (!window.shiftsDataGlobal[weekStartIso][staff]) window.shiftsDataGlobal[weekStartIso][staff] = {};
             if (!window.shiftsDataGlobal[weekStartIso][staff][dayIdx]) window.shiftsDataGlobal[weekStartIso][staff][dayIdx] = { type: "", start: "08:00", end: "14:00" };
@@ -677,6 +723,11 @@
             var h = getSelectedWheelValue('wheelHours');
             var m = getSelectedWheelValue('wheelMinutes');
             var weekStartIso = document.getElementById('selectWeek').value;
+            localStorage.setItem('pk_last_edited_week', weekStartIso);
+
+            if (window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(weekStartIso);
+            }
 
             if (!window.shiftsDataGlobal[weekStartIso]) window.shiftsDataGlobal[weekStartIso] = {};
             if (!window.shiftsDataGlobal[weekStartIso][activeTimeStaff]) window.shiftsDataGlobal[weekStartIso][activeTimeStaff] = {};
@@ -775,7 +826,14 @@
         }
 
         initFilters();
-        renderTable();
+        
+        // Se c'era una settimana salvata in locale prima che Firestore risponda, la applichiamo subito
+        var savedWeekLocal = localStorage.getItem('pk_last_edited_week');
+        if (savedWeekLocal) {
+            applySelectedWeek(savedWeekLocal);
+        } else {
+            renderTable();
+        }
     </script>
 </body>
 </html>
