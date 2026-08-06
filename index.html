@@ -628,15 +628,37 @@
                 headerRow.innerHTML += '<th>' + daysNames[i] + '<small>' + d.getDate() + ' ' + getMonthNameShort(d.getMonth()) + '</small></th>';
             }
 
-            var staffList = window.staffListGlobal;
             var currentWeekData = window.shiftsDataGlobal[weekStartIso] || {};
+
+            // Dipendenti attualmente presenti
+            var staffList = window.staffListGlobal.slice();
+
+            // Recupera anche gli extra o gli ex dipendenti che avevano turni
+            // nella settimana che stiamo visualizzando
+            Object.keys(currentWeekData).forEach(function(staffName) {
+                var daysData = currentWeekData[staffName] || {};
+
+                var hasWorked = Object.keys(daysData).some(function(dayIdx) {
+                    var shift = daysData[dayIdx] || {};
+
+                    return Boolean(
+                        shift.type ||
+                        shift.start ||
+                        shift.end
+                    );
+                });
+
+                if (hasWorked && staffList.indexOf(staffName) === -1) {
+                    staffList.push(staffName);
+                }
+            });
 
             var tbody = document.getElementById('tableBody');
             tbody.innerHTML = "";
 
             staffList.forEach(function(staff) {
                 var rowHTML = '<tr><td class="staff-name">' + staff;
-                if (isEditMode) {
+                if (isEditMode && window.staffListGlobal.indexOf(staff) !== -1) {
                     rowHTML += ' <span onclick="removeStaff(\'' + staff + '\')" style="color:var(--red-riposo); cursor:pointer; font-size:10px; margin-left:4px;">(X)</span>';
                 }
                 rowHTML += '</td>';
@@ -680,18 +702,41 @@
         function updateShiftType(staff, dayIdx, value) {
             var weekStartIso = document.getElementById('selectWeek').value;
 
-            // Quando si modifica un turno, la settimana diventa ufficialmente quella predefinita globale
             if (window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(weekStartIso);
             }
 
-            if (!window.shiftsDataGlobal[weekStartIso]) window.shiftsDataGlobal[weekStartIso] = {};
-            if (!window.shiftsDataGlobal[weekStartIso][staff]) window.shiftsDataGlobal[weekStartIso][staff] = {};
-            if (!window.shiftsDataGlobal[weekStartIso][staff][dayIdx]) window.shiftsDataGlobal[weekStartIso][staff][dayIdx] = { type: "", start: "08:00", end: "14:00" };
+            if (!window.shiftsDataGlobal[weekStartIso]) {
+                window.shiftsDataGlobal[weekStartIso] = {};
+            }
 
-            window.shiftsDataGlobal[weekStartIso][staff][dayIdx].type = value;
-            
-            if (window.syncSaveShifts) window.syncSaveShifts(window.shiftsDataGlobal);
+            if (!window.shiftsDataGlobal[weekStartIso][staff]) {
+                window.shiftsDataGlobal[weekStartIso][staff] = {};
+            }
+
+            if (!window.shiftsDataGlobal[weekStartIso][staff][dayIdx]) {
+                window.shiftsDataGlobal[weekStartIso][staff][dayIdx] = {
+                    type: "",
+                    start: "",
+                    end: ""
+                };
+            }
+
+            var shift = window.shiftsDataGlobal[weekStartIso][staff][dayIdx];
+            shift.type = value;
+
+            if (value === "Orario") {
+                if (!shift.start) shift.start = "08:00";
+                if (!shift.end) shift.end = "14:00";
+            } else {
+                shift.start = "";
+                shift.end = "";
+            }
+
+            if (window.syncSaveShifts) {
+                window.syncSaveShifts(window.shiftsDataGlobal);
+            }
+
             renderTable();
         }
 
@@ -803,7 +848,19 @@
             var msg = "*TURNI PINK PANTHER*\n(" + weekLabel + ")\n\n";
             var currentWeekData = window.shiftsDataGlobal[weekSelect.value] || {};
 
-            window.staffListGlobal.forEach(function(staff) {
+            var staffList = window.staffListGlobal.slice();
+            Object.keys(currentWeekData).forEach(function(staffName) {
+                var daysData = currentWeekData[staffName] || {};
+                var hasWorked = Object.keys(daysData).some(function(dayIdx) {
+                    var shift = daysData[dayIdx] || {};
+                    return Boolean(shift.type || shift.start || shift.end);
+                });
+                if (hasWorked && staffList.indexOf(staffName) === -1) {
+                    staffList.push(staffName);
+                }
+            });
+
+            staffList.forEach(function(staff) {
                 msg += "*" + staff + ":*\n";
                 var days = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
                 for (var i = 0; i < 7; i++) {
