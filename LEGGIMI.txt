@@ -1,0 +1,18 @@
+PINK PANTHER TURNI - NETLIFY
+
+Questo progetto salva i turni online con Netlify Blobs.
+Tutti i telefoni che aprono lo stesso sito vedono gli stessi dati.
+
+PUBBLICAZIONE CONSIGLIATA:
+1. Metti questa cartella in un repository GitHub.
+2. In Netlify scegli "Add new project" > "Import an existing project".
+3. Collega GitHub e seleziona il repository.
+4. Build command: lascia vuoto.
+5. Publish directory: .
+6. Pubblica.
+
+PIN gestore: 1818
+
+IMPORTANTE:
+Il semplice trascinamento del solo index.html non basta, perché il progetto usa anche
+la funzione netlify/functions/turni.mjs e il pacchetto @netlify/blobs.

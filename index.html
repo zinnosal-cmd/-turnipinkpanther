@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pink Panther - Gestione Turni</title>
+<style>
+:root{--bg:#050505;--card:#121212;--border:#292929;--pink:#e65c9c;--text:#fff;--muted:#999;--red:#ff4d4d;--green:#25d366}
+*{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);padding:16px;max-width:1000px;margin:auto}
+.header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1d1d1d;padding:8px 0 18px;margin-bottom:18px}
+.logo{background:#000;border-radius:10px;padding:10px 14px;font-weight:900;line-height:.9;letter-spacing:2px;font-size:23px}
+.logo b{color:var(--pink)}
+button{cursor:pointer}
+.toggle,.btn{border-radius:12px;padding:11px 14px;font-weight:800;border:1px solid #333;background:#1a1a1a;color:#fff}
+.toggle{color:var(--pink);border-color:var(--pink);background:rgba(230,92,156,.12)}
+.btn.primary{background:var(--pink);border-color:var(--pink)}
+.btn.blue{background:#2563eb;border-color:#2563eb}
+.btn.wa{background:#17231c;border-color:var(--green);color:var(--green)}
+.card{background:var(--card);border:1px solid #222;border-radius:16px;padding:16px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px}
+label{display:block;font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;margin-bottom:5px}
+select,input{width:100%;background:#1a1a1a;border:1px solid #333;color:#fff;border-radius:10px;padding:10px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.hidden{display:none!important}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:720px;text-align:center;font-size:13px}
+th,td{border:1px solid var(--border);padding:8px 5px}
+th{background:#21151a;color:var(--pink);font-size:12px;text-transform:uppercase}
+th small{display:block;color:#fff;font-weight:400;margin-top:3px}
+.name{text-align:left;font-weight:800;background:#161616;padding-left:12px;white-space:nowrap}
+.cell{display:flex;flex-direction:column;gap:4px}
+.cell select{padding:5px;font-size:12px;text-align:center}
+.riposo{color:var(--red)!important;font-weight:800}
+.orario{color:var(--pink);font-size:11px;font-weight:800}
+.time-row{display:flex;gap:3px}
+.time-row input{padding:5px;font-size:11px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:10}
+.modal-card{width:88%;max-width:330px;background:#121212;border:1px solid var(--pink);border-radius:18px;padding:22px;text-align:center}
+.pin{font-size:24px;text-align:center;letter-spacing:7px;margin:14px 0}
+.modal-actions{display:flex;gap:10px}
+.modal-actions button{flex:1}
+.toast{position:fixed;right:18px;bottom:18px;padding:10px 16px;border-radius:20px;font-weight:800;z-index:20}
+.ok{background:var(--green);color:#000}
+.err{background:var(--red);color:#fff}
+.status{font-size:12px;color:var(--muted);margin-top:8px}
+@media print{.toggle,.card,.actions{display:none!important}body{max-width:none}.table-wrap{overflow:visible}table{min-width:0;font-size:10px}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"><div><b>P</b>INK</div><div>PANTHE<b>R</b></div></div>
+  <button class="toggle" id="toggleBtn">Modifica (PIN)</button>
+</div>
+
+<div class="card">
+  <div class="grid">
+    <div><label>Anno</label><select id="year"></select></div>
+    <div><label>Mese</label><select id="month">
+      <option value="0">Gennaio</option><option value="1">Febbraio</option><option value="2">Marzo</option>
+      <option value="3">Aprile</option><option value="4">Maggio</option><option value="5">Giugno</option>
+      <option value="6">Luglio</option><option value="7">Agosto</option><option value="8">Settembre</option>
+      <option value="9">Ottobre</option><option value="10">Novembre</option><option value="11">Dicembre</option>
+    </select></div>
+    <div><label>Settimana</label><select id="week"></select></div>
+    <div><label>Cerca dipendente</label><input id="search" placeholder="Es. Salvatore"></div>
+  </div>
+  <div class="status" id="status">Caricamento dati condivisi…</div>
+</div>
+
+<div class="actions hidden" id="actions">
+  <button class="btn primary" id="addStaff">+ Aggiungi dipendente</button>
+  <button class="btn blue" id="save">💾 Salva modifiche</button>
+  <button class="btn wa" id="share">Invia turni su WhatsApp</button>
+  <button class="btn" onclick="window.print()">Stampa / PDF</button>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead><tr id="head"></tr></thead>
+<tbody id="body"></tbody>
+</table>
+</div>
+
+<div class="modal hidden" id="pinModal">
+  <div class="modal-card">
+    <h3 style="color:var(--pink);margin:0">AREA GESTORE</h3>
+    <p style="color:var(--muted);font-size:12px">Inserisci il PIN per modificare i turni</p>
+    <input class="pin" id="pin" type="password" maxlength="4" inputmode="numeric" placeholder="****">
+    <div class="modal-actions">
+      <button class="btn" id="cancelPin">Annulla</button>
+      <button class="btn primary" id="confirmPin">Entra</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const MASTER_PIN="1818";
+const API="/api/turni";
+const defaultStaff=["Salvatore","Marco","Gennaro","Titti","Raffaella","Maria","Mirko"];
+let editMode=false;
+let data={staff:[...defaultStaff],shifts:{},updatedAt:null};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+const monthShort=["Gen","Feb","Mar","Apr","Mag","Giu","Lug","Ago","Set","Ott","Nov","Dic"];
+const dayNames=["Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato","Domenica"];
+
+function toast(msg,ok=true){
+  $("toast").textContent=msg;
+  $("toast").className="toast "+(ok?"ok":"err");
+  setTimeout(()=>$("toast").classList.add("hidden"),2800);
+}
+function setStatus(msg){$("status").textContent=msg}
+
+function init(){
+  const now=new Date();
+  for(let y=now.getFullYear()-1;y<=now.getFullYear()+2;y++){
+    const o=document.createElement("option");o.value=y;o.textContent=y;if(y===now.getFullYear())o.selected=true;$("year").appendChild(o);
+  }
+  $("month").value=now.getMonth();
+  bind();
+  populateWeeks();
+  loadCloud();
+  setInterval(()=>{if(!editMode) loadCloud(false)},30000);
+}
+
+function bind(){
+  $("year").addEventListener("change",()=>{populateWeeks();render()});
+  $("month").addEventListener("change",()=>{populateWeeks();render()});
+  $("week").addEventListener("change",render);
+  $("search").addEventListener("input",filterRows);
+  $("toggleBtn").addEventListener("click",toggleEdit);
+  $("cancelPin").addEventListener("click",()=>$("pinModal").classList.add("hidden"));
+  $("confirmPin").addEventListener("click",verifyPin);
+  $("pin").addEventListener("keydown",e=>{if(e.key==="Enter")verifyPin()});
+  $("addStaff").addEventListener("click",addStaff);
+  $("save").addEventListener("click",saveCloud);
+  $("share").addEventListener("click",shareWhatsApp);
+}
+
+async function loadCloud(showMessage=true){
+  try{
+    if(showMessage)setStatus("Caricamento dati condivisi…");
+    const r=await fetch(API,{cache:"no-store"});
+    if(!r.ok)throw new Error("Errore server "+r.status);
+    const incoming=await r.json();
+    if(incoming&&Array.isArray(incoming.staff)&&incoming.shifts){
+      data=incoming;
+    }
+    render();
+    const when=data.updatedAt?new Date(data.updatedAt).toLocaleString("it-IT"):"nessun salvataggio ancora";
+    setStatus("Dati condivisi online • Ultimo aggiornamento: "+when);
+  }catch(e){
+    console.error(e);
+    setStatus("ERRORE: dati online non raggiungibili. Il progetto Netlify non è stato pubblicato correttamente.");
+    if(showMessage)toast("Errore caricamento online",false);
+  }
+}
+
+async function saveCloud(){
+  const btn=$("save");
+  btn.disabled=true;btn.textContent="Salvataggio…";
+  try{
+    const r=await fetch(API,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json","X-Admin-Pin":MASTER_PIN},
+      body:JSON.stringify(data)
+    });
+    const out=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(out.error||"Errore salvataggio");
+    data=out.data;
+    render();
+    setStatus("Dati condivisi online • Ultimo aggiornamento: "+new Date(data.updatedAt).toLocaleString("it-IT"));
+    toast("Salvato online: ora i colleghi vedono gli stessi turni");
+  }catch(e){
+    toast(e.message,false);
+  }finally{
+    btn.disabled=false;btn.textContent="💾 Salva modifiche";
+  }
+}
+
+function populateWeeks(){
+  const year=Number($("year").value),month=Number($("month").value);
+  const old=$("week").value;
+  $("week").innerHTML="";
+  const first=new Date(year,month,1);
+  const diff=first.getDay()===0?-6:1-first.getDay();
+  let monday=new Date(year,month,1+diff);
+  const last=new Date(year,month+1,0);
+  const today=new Date();today.setHours(0,0,0,0);
+  let selected="";
+  while(monday<=last){
+    const sunday=new Date(monday);sunday.setDate(sunday.getDate()+6);
+    const iso=localIso(monday);
+    const o=document.createElement("option");
+    o.value=iso;o.textContent=`Dal ${monday.getDate()} ${monthShort[monday.getMonth()]} al ${sunday.getDate()} ${monthShort[sunday.getMonth()]}`;
+    $("week").appendChild(o);
+    if(today>=monday&&today<=sunday)selected=iso;
+    monday.setDate(monday.getDate()+7);
+  }
+  if([...$("week").options].some(o=>o.value===old))$("week").value=old;
+  else if(selected)$("week").value=selected;
+}
+function localIso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+
+function render(){
+  const iso=$("week").value;if(!iso)return;
+  const [y,m,d]=iso.split("-").map(Number);
+  const start=new Date(y,m-1,d);
+  $("head").innerHTML='<th style="width:130px">Dipendente</th>';
+  for(let i=0;i<7;i++){
+    const x=new Date(start);x.setDate(x.getDate()+i);
+    $("head").innerHTML+=`<th>${dayNames[i]}<small>${x.getDate()} ${monthShort[x.getMonth()]}</small></th>`;
+  }
+  const weekData=data.shifts[iso]||{};
+  $("body").innerHTML="";
+  (data.staff||[]).forEach(staff=>{
+    const tr=document.createElement("tr");
+    let html=`<td class="name">${esc(staff)}${editMode?` <span data-remove="${encodeURIComponent(staff)}" style="color:var(--red);font-size:10px;cursor:pointer">(X)</span>`:""}</td>`;
+    for(let i=0;i<7;i++){
+      const c=(weekData[staff]&&weekData[staff][i])||{type:"",start:"",end:""};
+      html+="<td><div class='cell'>";
+      if(editMode){
+        html+=`<select data-staff="${encodeURIComponent(staff)}" data-day="${i}" class="${c.type==="Riposo"?"riposo":""}">
+          ${["","Mattina","Pomeriggio","Sera","Orario","Riposo"].map(t=>`<option value="${t}" ${c.type===t?"selected":""}>${t||"-"}</option>`).join("")}
+        </select>`;
+        if(c.type==="Orario"){
+          html+=`<div class="time-row">
+            <input type="time" value="${c.start||"08:00"}" data-time="start" data-staff="${encodeURIComponent(staff)}" data-day="${i}">
+            <input type="time" value="${c.end||"14:00"}" data-time="end" data-staff="${encodeURIComponent(staff)}" data-day="${i}">
+          </div>`;
+        }
+      }else{
+        if(c.type==="Riposo")html+='<div class="riposo">Riposo</div>';
+        else if(c.type==="Orario")html+=`<div class="orario">${esc(c.start||"--:--")} - ${esc(c.end||"--:--")}</div>`;
+        else html+=`<div>${esc(c.type||"-")}</div>`;
+      }
+      html+="</div></td>";
+    }
+    tr.innerHTML=html;$("body").appendChild(tr);
+  });
+  bindTable();
+  filterRows();
+}
+
+function bindTable(){
+  document.querySelectorAll("select[data-staff]").forEach(el=>el.addEventListener("change",e=>{
+    updateType(decodeURIComponent(e.target.dataset.staff),Number(e.target.dataset.day),e.target.value);
+  }));
+  document.querySelectorAll("input[data-time]").forEach(el=>el.addEventListener("change",e=>{
+    const staff=decodeURIComponent(e.target.dataset.staff),day=Number(e.target.dataset.day),field=e.target.dataset.time;
+    ensureCell(staff,day).type="Orario";ensureCell(staff,day)[field]=e.target.value;
+  }));
+  document.querySelectorAll("[data-remove]").forEach(el=>el.addEventListener("click",()=>removeStaff(decodeURIComponent(el.dataset.remove))));
+}
+function ensureCell(staff,day){
+  const w=$("week").value;
+  data.shifts[w]??={};data.shifts[w][staff]??={};data.shifts[w][staff][day]??={type:"",start:"",end:""};
+  return data.shifts[w][staff][day];
+}
+function updateType(staff,day,type){
+  const c=ensureCell(staff,day);c.type=type;
+  if(type==="Orario"){c.start=c.start||"08:00";c.end=c.end||"14:00"}else{c.start="";c.end=""}
+  render();
+}
+function toggleEdit(){
+  if(editMode){
+    editMode=false;$("actions").classList.add("hidden");$("toggleBtn").textContent="Modifica (PIN)";render();loadCloud(false);
+  }else{
+    $("pin").value="";$("pinModal").classList.remove("hidden");$("pin").focus();
+  }
+}
+function verifyPin(){
+  if($("pin").value.trim()===MASTER_PIN){
+    editMode=true;$("pinModal").classList.add("hidden");$("actions").classList.remove("hidden");$("toggleBtn").textContent="Esci da Modifica";render();
+  }else{toast("PIN errato",false);$("pin").value=""}
+}
+function addStaff(){
+  const name=prompt("Nome del dipendente:");
+  if(!name||!name.trim())return;
+  const n=name.trim();
+  if(data.staff.includes(n))return toast("Dipendente già presente",false);
+  data.staff.push(n);render();
+}
+function removeStaff(name){
+  if(confirm("Vuoi rimuovere "+name+"?")){data.staff=data.staff.filter(x=>x!==name);render()}
+}
+function filterRows(){
+  const q=$("search").value.toLowerCase();
+  document.querySelectorAll("#body tr").forEach(r=>r.style.display=r.querySelector(".name").textContent.toLowerCase().includes(q)?"":"none");
+}
+function shareWhatsApp(){
+  const iso=$("week").value,week=data.shifts[iso]||{},opt=$("week").selectedOptions[0];
+  let msg=`*TURNI PINK PANTHER*\n(${opt?opt.textContent:""})\n\n`;
+  const days=["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
+  data.staff.forEach(staff=>{
+    msg+=`*${staff}:*\n`;
+    for(let i=0;i<7;i++){
+      const c=(week[staff]&&week[staff][i])||{};
+      let v="-";if(c.type==="Riposo")v="Riposo";else if(c.type==="Orario")v=`${c.start||"--:--"} - ${c.end||"--:--"}`;else if(c.type)v=c.type;
+      msg+=`   ${days[i]}: ${v}\n`;
+    }msg+="\n";
+  });
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+init();
+</script>
+</body>
+</html>
