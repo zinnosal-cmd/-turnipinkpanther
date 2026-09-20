@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pink Panther - Gestione Turni</title>
+    <title>Pink Panther - Gestione Turni (Firestore)</title>
     <style>
         :root {
             --bg-color: #050505;
@@ -21,518 +21,877 @@
         * {
             box-sizing: border-box;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 15px;
+            margin: 0;
+            padding: 16px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* HEADER E LOGO PINK PANTHER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 20px 0;
+            border-bottom: 1px solid #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .logo-box {
+            background-color: #000000;
+            padding: 12px 16px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-            position: relative;
-            padding-top: 10px;
-        }
-
-        .logo-title {
-            color: var(--accent-pink);
-            font-size: 2.2rem;
-            font-weight: 900;
+            line-height: 0.85;
+            font-family: 'Arial Black', Impact, sans-serif;
             text-transform: uppercase;
+            user-select: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .logo-row {
+            font-size: 24px;
+            font-weight: 900;
             letter-spacing: 2px;
-            text-shadow: 0 0 15px rgba(230, 92, 156, 0.4);
-            margin-bottom: 4px;
+            color: #ffffff;
+            display: flex;
         }
 
-        p.subtitle {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            font-weight: 500;
+        .pink-p {
+            background: linear-gradient(90deg, var(--accent-pink) 45%, #ffffff 45%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .admin-toggle-btn {
-            position: absolute;
-            right: 0;
-            top: 0;
-            background: #1f1f1f;
-            border: 1px solid #333;
-            color: #fff;
-            padding: 8px 14px;
-            border-radius: 8px;
+        .pink-k {
+            background: linear-gradient(135deg, #ffffff 55%, var(--accent-pink) 55%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .pink-a, .pink-h {
+            background: linear-gradient(180deg, #ffffff 40%, var(--accent-pink) 40%, var(--accent-pink) 65%, #ffffff 65%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .pink-r {
+            background: linear-gradient(135deg, #ffffff 60%, var(--accent-pink) 60%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .toggle-btn {
+            background: rgba(230, 92, 156, 0.15);
+            border: 1px solid var(--accent-pink);
+            color: var(--accent-pink);
+            padding: 10px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
             cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .controls-card {
+        /* BARRA FILTRI */
+        .card {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 15px;
+            border-radius: 16px;
+            padding: 16px;
             margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 12px;
         }
 
-        .control-group {
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            align-items: center;
+        }
+
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
         }
 
-        label {
-            font-size: 0.7rem;
+        .form-group label {
+            font-size: 11px;
             color: var(--text-secondary);
+            margin-bottom: 5px;
             text-transform: uppercase;
             font-weight: bold;
         }
 
-        select, input {
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            color: #fff;
+        .form-group select, .form-group input {
             padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            background-color: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 13px;
             outline: none;
-            width: 100%;
         }
 
-        select:focus, input:focus {
+        .form-group select:focus, .form-group input:focus {
             border-color: var(--accent-pink);
         }
 
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-
-        .btn {
-            padding: 12px 18px;
-            border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 0.9rem;
-        }
-
-        .btn-pink { background-color: var(--accent-pink); color: #fff; }
-        .btn-green { background-color: var(--green-wa); color: #fff; }
-        .btn-secondary { background-color: #262626; color: #fff; border: 1px solid #333; }
-
-        .table-wrapper {
-            width: 100%;
+        /* TABELLA TURNI */
+        .table-container {
             overflow-x: auto;
-            background-color: var(--card-bg);
-            border: 1px solid var(--card-border);
             border-radius: 12px;
+            border: 1px solid var(--table-border);
+            background: var(--card-bg);
+            margin-bottom: 20px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
+            text-align: center;
+            font-size: 13px;
+            min-width: 650px;
         }
 
         th, td {
             border: 1px solid var(--table-border);
-            padding: 10px;
-            text-align: center;
-            vertical-align: middle;
+            padding: 8px 4px;
         }
 
         th {
             background-color: var(--table-header-bg);
             color: var(--accent-pink);
-            font-size: 0.85rem;
+            font-weight: 800;
             text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
         }
 
-        td.emp-name {
+        th small {
+            display: block;
+            color: var(--text-main);
+            font-size: 11px;
+            font-weight: normal;
+            margin-top: 2px;
+        }
+
+        td.staff-name {
             font-weight: bold;
             text-align: left;
+            padding-left: 12px;
             background-color: #161616;
-            min-width: 130px;
+            color: #ffffff;
+            width: 130px;
         }
 
-        .shift-cell {
+        .cell-container {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            align-items: center;
-        }
-
-        .time-inputs {
-            display: flex;
             gap: 4px;
+            align-items: center;
             justify-content: center;
+            padding: 2px;
         }
 
-        .time-inputs input {
-            padding: 4px;
-            font-size: 0.75rem;
-            width: 58px;
+        .cell-select {
+            width: 100%;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--text-main);
             text-align: center;
-            border-radius: 4px;
-            border: 1px solid var(--accent-pink);
-            background: #000;
-        }
-
-        .badge-draft {
-            background: #ff9800;
-            color: #000;
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .badge-published {
-            background: #4caf50;
-            color: #fff;
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .del-btn {
-            color: var(--red-riposo);
-            background: none;
-            border: none;
-            font-weight: bold;
+            text-align-last: center;
+            font-weight: 600;
+            font-size: 12px;
+            outline: none;
+            padding: 4px;
             cursor: pointer;
-            margin-left: 5px;
+            border-radius: 6px;
         }
-    </style>
 
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+        .cell-select.is-riposo {
+            color: var(--red-riposo) !important;
+            -webkit-text-fill-color: var(--red-riposo) !important;
+            font-weight: bold;
+        }
+
+        .cell-time-btn {
+            background: #111;
+            border: 1px solid var(--accent-pink);
+            color: var(--accent-pink);
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px 2px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .cell-display {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px;
+        }
+
+        .cell-display.is-riposo {
+            color: var(--red-riposo);
+        }
+
+        .cell-display.is-orario {
+            color: var(--accent-pink);
+            font-size: 11px;
+        }
+
+        /* MODALE PIN */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9); display: flex;
+            justify-content: center; align-items: center; z-index: 1000;
+        }
+
+        .modal-card {
+            background: var(--card-bg); padding: 24px; border-radius: 20px;
+            width: 85%; max-width: 320px; text-align: center; border: 1px solid var(--accent-pink);
+        }
+
+        .pin-input {
+            width: 100%; padding: 12px; font-size: 24px; letter-spacing: 8px;
+            text-align: center; background: #1a1a1a; border: 1px solid #333;
+            color: white; border-radius: 10px; margin: 16px 0; outline: none;
+        }
+
+        .modal-btns { display: flex; gap: 10px; }
+        .btn-confirm { background: var(--accent-pink); color: white; border: none; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background: #2a2a2a; color: white; border: none; padding: 12px; border-radius: 10px; flex: 1; font-weight: bold; cursor: pointer; }
+
+        /* MODALE SELETTORE ORARIO STILE IOS */
+        .ios-picker-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 2000;
+        }
+
+        .ios-picker-container {
+            background: #111; border: 1px solid #333; border-radius: 24px; width: 320px; padding: 20px; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .ios-picker-title {
+            color: var(--accent-pink); font-size: 15px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase;
+        }
+
+        .ios-wheels-wrapper {
+            display: flex; justify-content: center; gap: 15px; position: relative; height: 180px; margin-bottom: 20px; overflow: hidden;
+        }
+
+        .ios-highlight-bar {
+            position: absolute; top: 70px; left: 15px; right: 15px; height: 40px;
+            background: rgba(255, 255, 255, 0.08); border-top: 1px solid rgba(230,92,156,0.4); border-bottom: 1px solid rgba(230,92,156,0.4);
+            border-radius: 8px; pointer-events: none; z-index: 2;
+        }
+
+        .ios-wheel-column {
+            flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; -ms-overflow-style: none; scrollbar-width: none;
+            position: relative; z-index: 1; padding: 70px 0;
+        }
+        .ios-wheel-column::-webkit-scrollbar { display: none; }
+
+        .ios-wheel-item {
+            height: 40px; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: bold; color: #555; scroll-snap-align: center; cursor: pointer; transition: color 0.1s;
+        }
+
+        .ios-picker-footer { display: flex; gap: 10px; }
+        .hidden { display: none !important; }
+
+        .action-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn-action {
+            background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px 14px;
+            border-radius: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-action.primary { background: var(--accent-pink); border-color: var(--accent-pink); }
+        .btn-action.whatsapp { background: #1f2c24; color: var(--green-wa); border-color: var(--green-wa); }
+
+        .status-badge {
+            font-size: 11px; padding: 4px 8px; border-radius: 10px; background: #222; color: #aaa; margin-left: 10px;
+        }
+        .status-badge.online { background: #132a1c; color: var(--green-wa); }
+    </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <div class="logo-title">PINK PANTHER</div>
-        <p class="subtitle">Gestione Turni Personale <span id="statusBadge"></span></p>
-        <button class="admin-toggle-btn" id="adminBtn" onclick="toggleAdmin()">Gestione Manager</button>
-    </header>
-
-    <div class="controls-card">
-        <div class="control-group">
-            <label>Anno</label>
-            <select id="yearSelect" onchange="onDateFilterChange()"></select>
+    <!-- HEADER LOGO PINK PANTHER -->
+    <div class="header">
+        <div class="logo-box">
+            <div class="logo-row">
+                <span class="pink-p">P</span>IN<span class="pink-k">K</span>
+            </div>
+            <div class="logo-row">
+                P<span class="pink-a">A</span>N<span class="pink-h">T</span>H<span class="pink-h">E</span><span class="pink-r">R</span>
+            </div>
         </div>
-        <div class="control-group">
-            <label>Mese</label>
-            <select id="monthSelect" onchange="onDateFilterChange()"></select>
-        </div>
-        <div class="control-group">
-            <label>Settimana Reale</label>
-            <select id="weekSelect" onchange="loadCurrentWeekData()"></select>
-        </div>
-        <div class="control-group">
-            <label>Cerca Dipendente</label>
-            <input type="text" id="searchEmp" placeholder="Es. Salvatore..." oninput="filterEmployees()">
+        <div>
+            <span id="cloudStatus" class="status-badge">Connessione...</span>
+            <button class="toggle-btn" id="toggleViewBtn" onclick="handleViewToggle()">Modifica (PIN)</button>
         </div>
     </div>
 
-    <div class="action-buttons">
-        <button class="btn btn-pink admin-only" onclick="addEmployee()" style="display:none;">+ Aggiungi Dipendente</button>
-        <button class="btn btn-green admin-only" id="publishBtn" onclick="publishShifts()" style="display:none;">🚀 Pubblica Turni</button>
-        <button class="btn btn-green" onclick="shareWhatsApp()">Invia su WhatsApp</button>
-        <button class="btn btn-secondary" onclick="window.print()">Stampa / PDF</button>
+    <!-- SELETTORE DATA E PERIODO -->
+    <div class="card">
+        <div class="filter-grid">
+            <div class="form-group">
+                <label>Anno</label>
+                <select id="selectYear" onchange="onYearMonthChange()"></select>
+            </div>
+            <div class="form-group">
+                <label>Mese</label>
+                <select id="selectMonth" onchange="onYearMonthChange()">
+                    <option value="0">Gennaio</option>
+                    <option value="1">Febbraio</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Aprile</option>
+                    <option value="4">Maggio</option>
+                    <option value="5">Giugno</option>
+                    <option value="6">Luglio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Settembre</option>
+                    <option value="9">Ottobre</option>
+                    <option value="10">Novembre</option>
+                    <option value="11">Dicembre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Settimana Reale</label>
+                <select id="selectWeek" onchange="onWeekChange()"></select>
+            </div>
+            <div class="form-group">
+                <label>Cerca Dipendente</label>
+                <input type="text" id="searchStaff" placeholder="Es. Salvatore..." oninput="filterStaff()">
+            </div>
+        </div>
     </div>
 
-    <div class="table-wrapper">
-        <table>
+    <!-- AZIONI GESTORE -->
+    <div id="adminActions" class="action-bar hidden">
+        <button class="btn-action primary" onclick="addStaffPrompt()">+ Aggiungi Dipendente</button>
+        <button class="btn-action whatsapp" onclick="shareWhatsApp()">Invia su WhatsApp</button>
+        <button class="btn-action" onclick="window.print()">Stampa / PDF</button>
+    </div>
+
+    <!-- TABELLA TURNI -->
+    <div class="table-container">
+        <table id="shiftsTable">
             <thead>
-                <tr id="tableHeader">
-                    <th>DIPENDENTE</th>
+                <tr id="tableHeaderRow">
+                    <th style="width:130px;">Dipendente</th>
+                    <th>Lunedì</th><th>Martedì</th><th>Mercoledì</th><th>Giovedì</th><th>Venerdì</th><th>Sabato</th><th>Domenica</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
         </table>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyDummyKeyForSecurityReasonOnly",
-        authDomain: "bar-pink-panther.firebaseapp.com",
-        projectId: "bar-pink-panther",
-        storageBucket: "bar-pink-panther.appspot.com",
-        messagingSenderId: "1234567890",
-        appId: "1:1234567890:web:abcdef123456"
-    };
+    <!-- MODALE PIN -->
+    <div id="pinModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3 style="margin:0; color:var(--accent-pink); font-size:16px;">AREA GESTORE TURNI</h3>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 6px;">Inserisci il PIN per modificare i turni</p>
+            <input type="password" id="pinCode" class="pin-input" maxlength="4" placeholder="****">
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="closePinModal()">Annulla</button>
+                <button class="btn-confirm" onclick="verifyPin()">Entra</button>
+            </div>
+        </div>
+    </div>
 
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    <!-- MODALE SELETTORE ORARIO STILE IOS -->
+    <div id="iosTimeModal" class="ios-picker-modal hidden">
+        <div class="ios-picker-container">
+            <div class="ios-picker-title" id="iosModalTitle">Seleziona Orario</div>
+            <div class="ios-wheels-wrapper">
+                <div class="ios-highlight-bar"></div>
+                <div class="ios-wheel-column" id="wheelHours"></div>
+                <div class="ios-wheel-column" id="wheelMinutes"></div>
+            </div>
+            <div class="ios-picker-footer">
+                <button class="btn-cancel" onclick="closeIosTimeModal()">Annulla</button>
+                <button class="btn-confirm" onclick="confirmIosTime()">Conferma</button>
+            </div>
+        </div>
+    </div>
 
-    let isAdmin = false;
-    let currentShifts = {};
-    let employeesList = ["Salvatore", "Marco", "Gennaro", "Titti", "Maria", "Mirko", "Francesca", "Raffaela"];
-    let unsubscribe = null;
+    <!-- SDK FIREBASE FIRESTORE (Modular v9/v10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const daysNames = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
-    const shiftOptions = ["-", "Mattina", "Pomeriggio", "Sera", "Spezzato", "Riposo", "Orario"];
+        const firebaseConfig = {
+            apiKey: "AIzaSyBEFwdiVAs7-Lu6A4JRQkLjLvPoLiYfHNI",
+            authDomain: "turni-pink-panther.firebaseapp.com",
+            projectId: "turni-pink-panther",
+            storageBucket: "turni-pink-panther.firebasestorage.app",
+            messagingSenderId: "123215573279",
+            appId: "1:123215573279:web:c7c39fcd9b08c2b686802a"
+        };
 
-    window.onload = function() {
-        initYearAndMonths();
-    };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-    function toggleAdmin() {
-        if (!isAdmin) {
-            let pin = prompt("Inserisci il PIN Manager:");
-            if (pin === "1818") {
-                isAdmin = true;
-                document.getElementById("adminBtn").innerText = "Uscita Manager";
-                document.querySelectorAll(".admin-only").forEach(el => el.style.display = "inline-flex");
-                loadCurrentWeekData();
-            } else if (pin !== null) {
-                alert("PIN Errato!");
+        const docShifts = doc(db, 'app_data', 'shiftsData');
+        const docStaff = doc(db, 'app_data', 'staffList');
+        const docConfig = doc(db, 'app_data', 'config');
+
+        onSnapshot(docShifts, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                window.shiftsDataGlobal = data;
+                localStorage.setItem('pk_shifts_data_v3', JSON.stringify(data));
             }
-        } else {
-            isAdmin = false;
-            document.getElementById("adminBtn").innerText = "Gestione Manager";
-            document.querySelectorAll(".admin-only").forEach(el => el.style.display = "none");
-            loadCurrentWeekData();
-        }
-    }
-
-    function initYearAndMonths() {
-        const ySelect = document.getElementById("yearSelect");
-        const mSelect = document.getElementById("monthSelect");
-        const now = new Date();
-        const curYear = now.getFullYear();
-
-        ySelect.innerHTML = `<option value="${curYear}">${curYear}</option><option value="${curYear+1}">${curYear+1}</option>`;
-        const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
-        mSelect.innerHTML = months.map((m, idx) => `<option value="${idx}" ${idx === now.getMonth() ? 'selected' : ''}>${m}</option>`).join('');
-
-        updateWeekOptions();
-    }
-
-    function onDateFilterChange() {
-        updateWeekOptions();
-        loadCurrentWeekData();
-    }
-
-    function updateWeekOptions() {
-        const year = parseInt(document.getElementById("yearSelect").value);
-        const month = parseInt(document.getElementById("monthSelect").value);
-        const wSelect = document.getElementById("weekSelect");
-        wSelect.innerHTML = "";
-        
-        let date = new Date(year, month, 1);
-        let mondays = [];
-
-        while (date.getMonth() === month) {
-            if (date.getDay() === 1) mondays.push(new Date(date));
-            date.setDate(date.getDate() + 1);
-        }
-
-        if (mondays.length === 0 || mondays[0].getDate() > 1) {
-            let firstDay = new Date(year, month, 1);
-            let dayOfWeek = firstDay.getDay();
-            let diff = firstDay.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-            let prevMonday = new Date(firstDay.setDate(diff));
-            mondays.unshift(prevMonday);
-        }
-
-        mondays.forEach((mon) => {
-            let sun = new Date(mon);
-            sun.setDate(mon.getDate() + 6);
-            let label = `Dal ${mon.getDate()} ${getShortMonth(mon.getMonth())} al ${sun.getDate()} ${getShortMonth(sun.getMonth())}`;
-            let docId = `${mon.getFullYear()}_W${getWeekNumber(mon)}`;
-            
-            let opt = document.createElement("option");
-            opt.value = docId;
-            opt.innerText = label;
-            opt.dataset.monday = mon.toISOString();
-            if (docId === "2026_W39") opt.selected = true;
-            wSelect.appendChild(opt);
+            document.getElementById('cloudStatus').innerText = "Firestore Live";
+            document.getElementById('cloudStatus').classList.add('online');
+            window.renderTable();
         });
 
-        loadCurrentWeekData();
-    }
-
-    function getShortMonth(mIdx) {
-        return ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"][mIdx];
-    }
-
-    function getWeekNumber(d) {
-        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-        return Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-    }
-
-    function renderTableHeader() {
-        const wSelect = document.getElementById("weekSelect");
-        const headerTr = document.getElementById("tableHeader");
-        headerTr.innerHTML = '<th>DIPENDENTE</th>';
-
-        if (!wSelect.selectedOptions.length) return;
-        let monStr = wSelect.selectedOptions[0].dataset.monday;
-        let mon = monStr ? new Date(monStr) : new Date();
-
-        for (let i = 0; i < 7; i++) {
-            let cur = new Date(mon);
-            cur.setDate(mon.getDate() + i);
-            headerTr.innerHTML += `<th>${daysNames[i].toUpperCase()}<br><small style="font-size:0.7rem; color:#fff;">${cur.getDate()} ${getShortMonth(cur.getMonth()).toUpperCase()}</small></th>`;
-        }
-    }
-
-    function loadCurrentWeekData() {
-        renderTableHeader();
-        const docId = document.getElementById("weekSelect").value;
-        const statusBadge = document.getElementById("statusBadge");
-
-        if (unsubscribe) unsubscribe();
-
-        const collectionName = isAdmin ? "shiftsData_drafts" : "shiftsData";
-
-        unsubscribe = db.collection(collectionName).doc(docId).onSnapshot(doc => {
-            if (doc.exists) {
-                currentShifts = doc.data().shifts || {};
-                statusBadge.innerHTML = isAdmin ? '<span class="badge-draft">BOZZA (Manager)</span>' : '<span class="badge-published">PUBBLICATO</span>';
-            } else {
-                currentShifts = {};
-                statusBadge.innerHTML = isAdmin ? '<span class="badge-draft">NUOVA BOZZA</span>' : '<span style="color:#888;">(Non pubblicato)</span>';
-            }
-            renderTable();
-        });
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById("tableBody");
-        tbody.innerHTML = "";
-
-        employeesList.forEach(emp => {
-            let tr = document.createElement("tr");
-            tr.className = "emp-row";
-            tr.dataset.name = emp.toLowerCase();
-
-            let tdName = `<td class="emp-name">${emp} ${isAdmin ? `<button class="del-btn" onclick="removeEmployee('${emp}')">(X)</button>` : ''}</td>`;
-            tr.innerHTML += tdName;
-
-            for (let i = 0; i < 7; i++) {
-                let cellData = (currentShifts[emp] && currentShifts[emp][i]) ? currentShifts[emp][i] : { type: "-", start: "", end: "" };
-                let tdContent = "";
-
-                if (isAdmin) {
-                    tdContent = `<div class="shift-cell">
-                        <select onchange="updateShift('${emp}', ${i}, 'type', this.value)">
-                            ${shiftOptions.map(opt => `<option value="${opt}" ${cellData.type === opt ? 'selected' : ''}>${opt}</option>`).join('')}
-                        </select>
-                        ${cellData.type === 'Orario' ? `
-                            <div class="time-inputs">
-                                <input type="time" value="${cellData.start || ''}" onchange="updateShift('${emp}',${i}, 'start', this.value)">
-                                <input type="time" value="${cellData.end || ''}" onchange="updateShift('${emp}',${i}, 'end', this.value)">
-                            </div>
-                        ` : ''}
-                    </div>`;
-                } else {
-                    let displayTxt = cellData.type;
-                    if (cellData.type === 'Orario' && cellData.start && cellData.end) {
-                        displayTxt = `${cellData.start} - ${cellData.end}`;
-                    }
-                    let style = cellData.type === 'Riposo' ? 'color: var(--red-riposo); font-weight:bold;' : '';
-                    tdContent = `<span style="${style}">${displayTxt}</span>`;
+        onSnapshot(docStaff, (snapshot) => {
+            if (snapshot.exists()) {
+                const listData = snapshot.data();
+                if (listData && listData.list) {
+                    window.staffListGlobal = listData.list;
+                    localStorage.setItem('pk_staff_list_v3', JSON.stringify(listData.list));
                 }
-                tr.innerHTML += `<td>${tdContent}</td>`;
             }
-            tbody.appendChild(tr);
+            window.renderTable();
         });
-    }
 
-    function updateShift(emp, dayIdx, field, value) {
-        if (!currentShifts[emp]) currentShifts[emp] = {};
-        if (!currentShifts[emp][dayIdx]) currentShifts[emp][dayIdx] = { type: "-", start: "", end: "" };
+        onSnapshot(docConfig, (snapshot) => {
+            if (snapshot.exists()) {
+                const cfg = snapshot.data();
 
-        currentShifts[emp][dayIdx][field] = value;
+                if (cfg && cfg.selectedWeek) {
+                    localStorage.setItem('pk_last_edited_week', cfg.selectedWeek);
 
-        const docId = document.getElementById("weekSelect").value;
-        db.collection("shiftsData_drafts").doc(docId).set({
-            shifts: currentShifts,
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-    }
-
-    function publishShifts() {
-        const docId = document.getElementById("weekSelect").value;
-        if (!confirm("Vuoi pubblicare questi turni per i dipendenti?")) return;
-
-        db.collection("shiftsData").doc(docId).set({
-            shifts: currentShifts,
-            publishedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            alert("Turni Pubblicati con successo!");
+                    if (window.applySelectedWeek) {
+                        window.applySelectedWeek(cfg.selectedWeek);
+                    }
+                }
+            }
         });
-    }
 
-    function addEmployee() {
-        let name = prompt("Nome nuovo dipendente:");
-        if (name && !employeesList.includes(name)) {
-            employeesList.push(name);
+        window.syncSaveShifts = async function(data) {
+            try { await setDoc(docShifts, data); } catch (e) { console.error(e); }
+        };
+
+        window.syncSaveStaff = async function(list) {
+            try { await setDoc(docStaff, { list: list }); } catch (e) { console.error(e); }
+        };
+
+        window.syncSaveCurrentWeek = async function(weekIso) {
+            try { await setDoc(docConfig, { selectedWeek: weekIso }); } catch (e) { console.error(e); }
+        };
+    </script>
+
+    <script>
+        var MASTER_PIN = "1818";
+        var isEditMode = false;
+        var defaultStaff = ["Salvatore", "Marco", "Gennaro", "Titti", "Raffaella", "Maria", "Mirko"];
+
+        window.staffListGlobal = JSON.parse(localStorage.getItem('pk_staff_list_v3')) || defaultStaff;
+        window.shiftsDataGlobal = JSON.parse(localStorage.getItem('pk_shifts_data_v3')) || {};
+
+        var activeTimeStaff = null;
+        var activeTimeDayIdx = null;
+        var activeTimeField = null;
+
+        function initFilters() {
+            var yearSelect = document.getElementById('selectYear');
+            var now = new Date();
+            var currentYear = now.getFullYear();
+            var currentMonth = now.getMonth();
+
+            for (var y = currentYear - 1; y <= currentYear + 2; y++) {
+                var opt = document.createElement('option');
+                opt.value = y; opt.innerText = y;
+                if (y === currentYear) opt.selected = true;
+                yearSelect.appendChild(opt);
+            }
+
+            document.getElementById('selectMonth').value = currentMonth;
+            populateWeeks();
+        }
+
+        function onYearMonthChange() {
+            populateWeeks();
             renderTable();
         }
-    }
 
-    function removeEmployee(name) {
-        if (confirm(`Eliminare ${name}?`)) {
-            employeesList = employeesList.filter(e => e !== name);
+        function populateWeeks() {
+            var year = parseInt(document.getElementById('selectYear').value);
+            var month = parseInt(document.getElementById('selectMonth').value);
+            var weekSelect = document.getElementById('selectWeek');
+            weekSelect.innerHTML = "";
+
+            var firstDayOfMonth = new Date(year, month, 1);
+            var dayOfWeek = firstDayOfMonth.getDay(); 
+            var diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+            var currentMonday = new Date(year, month, 1 + diffToMonday);
+            var lastDayOfMonth = new Date(year, month + 1, 0);
+
+            var savedWeek = localStorage.getItem('pk_last_edited_week') || "";
+            var selectedVal = "";
+
+            while (currentMonday <= lastDayOfMonth) {
+                var sunday = new Date(currentMonday);
+                sunday.setDate(sunday.getDate() + 6);
+
+                var opt = document.createElement('option');
+                var isoString = currentMonday.getFullYear() + "-" + String(currentMonday.getMonth() + 1).padStart(2, '0') + "-" + String(currentMonday.getDate()).padStart(2, '0');
+                opt.value = isoString;
+
+                opt.innerText = "Dal " + currentMonday.getDate() + " " + getMonthNameShort(currentMonday.getMonth()) + " al " + sunday.getDate() + " " + getMonthNameShort(sunday.getMonth());
+                weekSelect.appendChild(opt);
+
+                if (isoString === savedWeek) {
+                    selectedVal = savedWeek;
+                }
+
+                currentMonday.setDate(currentMonday.getDate() + 7);
+            }
+
+            if (selectedVal && weekSelect.querySelector('option[value="' + selectedVal + '"]')) {
+                weekSelect.value = selectedVal;
+            }
+        }
+
+        function getMonthNameShort(m) {
+            return ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"][m];
+        }
+
+        function onWeekChange() {
+            var selectedWeek = document.getElementById('selectWeek').value;
+
+            // Salva solo in locale per chi sta semplicemente guardando i turni
+            localStorage.setItem('pk_last_edited_week', selectedWeek);
+
+            // Sincronizza nel Cloud per tutti SOLO SE si è sbloccata la modalità Gestore
+            if (isEditMode && window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(selectedWeek);
+            }
+
             renderTable();
         }
-    }
 
-    function filterEmployees() {
-        let q = document.getElementById("searchEmp").value.toLowerCase();
-        document.querySelectorAll(".emp-row").forEach(row => {
-            row.style.display = row.dataset.name.includes(q) ? "" : "none";
-        });
-    }
+        function applySelectedWeek(weekIso) {
+            if (!weekIso) return;
 
-    function shareWhatsApp() {
-        let txt = "*TURNI PINK PANTHER*\n\n";
-        let wSelect = document.getElementById("weekSelect");
-        txt += `*Settimana:* ${wSelect.options[wSelect.selectedIndex].text}\n\n`;
+            var parts = weekIso.split('-');
+            var year = parseInt(parts[0]);
+            var month = parseInt(parts[1]) - 1;
 
-        employeesList.forEach(emp => {
-            txt += `*${emp}:*\n`;
-            for (let i = 0; i < 7; i++) {
-                let cell = (currentShifts[emp] && currentShifts[emp][i]) ? currentShifts[emp][i] : { type: "-" };
-                let t = cell.type;
-                if (t === 'Orario' && cell.start) t = `${cell.start}-${cell.end}`;
-                txt += `  ${daysNames[i].slice(0,3)}: ${t}\n`;
+            document.getElementById('selectYear').value = year;
+            document.getElementById('selectMonth').value = month;
+
+            populateWeeks();
+
+            var weekSelect = document.getElementById('selectWeek');
+
+            if (weekSelect.querySelector('option[value="' + weekIso + '"]')) {
+                weekSelect.value = weekIso;
             }
-            txt += "\n";
-        });
 
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(txt)}`, '_blank');
-    }
-</script>
+            renderTable();
+        }
 
+        window.applySelectedWeek = applySelectedWeek;
+
+        function renderTable() {
+            var weekSelect = document.getElementById('selectWeek');
+            var weekStartIso = weekSelect.value;
+            if (!weekStartIso) return;
+
+            var parts = weekStartIso.split('-');
+            var startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            var daysNames = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
+
+            var headerRow = document.getElementById('tableHeaderRow');
+            headerRow.innerHTML = '<th style="width:130px;">Dipendente</th>';
+
+            for (var i = 0; i < 7; i++) {
+                var d = new Date(startDate);
+                d.setDate(d.getDate() + i);
+                headerRow.innerHTML += '<th>' + daysNames[i] + '<small>' + d.getDate() + ' ' + getMonthNameShort(d.getMonth()) + '</small></th>';
+            }
+
+            var currentWeekData = window.shiftsDataGlobal[weekStartIso] || {};
+
+            // Dipendenti attualmente presenti
+            var staffList = window.staffListGlobal.slice();
+
+            // Recupera anche gli extra o gli ex dipendenti che avevano turni
+            // nella settimana che stiamo visualizzando
+            Object.keys(currentWeekData).forEach(function(staffName) {
+                var daysData = currentWeekData[staffName] || {};
+
+                var hasWorked = Object.keys(daysData).some(function(dayIdx) {
+                    var shift = daysData[dayIdx] || {};
+
+                    return Boolean(
+                        shift.type ||
+                        shift.start ||
+                        shift.end
+                    );
+                });
+
+                if (hasWorked && staffList.indexOf(staffName) === -1) {
+                    staffList.push(staffName);
+                }
+            });
+
+            var tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            staffList.forEach(function(staff) {
+                var rowHTML = '<tr><td class="staff-name">' + staff;
+                if (isEditMode && window.staffListGlobal.indexOf(staff) !== -1) {
+                    rowHTML += ' <span onclick="removeStaff(\'' + staff + '\')" style="color:var(--red-riposo); cursor:pointer; font-size:10px; margin-left:4px;">(X)</span>';
+                }
+                rowHTML += '</td>';
+
+                for (var dayIdx = 0; dayIdx < 7; dayIdx++) {
+                    var cellData = (currentWeekData[staff] && currentWeekData[staff][dayIdx]) ? currentWeekData[staff][dayIdx] : { type: "", start: "", end: "" };
+                    var type = cellData.type || "";
+                    var start = cellData.start || "";
+                    var end = cellData.end || "";
+
+                    rowHTML += '<td><div class="cell-container">';
+
+                    if (isEditMode) {
+                        var isRiposo = type === "Riposo";
+                        rowHTML += '<select class="cell-select ' + (isRiposo ? 'is-riposo' : '') + '" onchange="updateShiftType(\'' + staff + '\', ' + dayIdx + ', this.value)">';
+                        ["", "Mattina", "Pomeriggio", "Sera", "Orario", "Riposo"].forEach(function(t) {
+                            rowHTML += '<option value="' + t + '" ' + (type === t ? 'selected' : '') + '>' + (t === "" ? "-" : t) + '</option>';
+                        });
+                        rowHTML += '</select>';
+
+                        if (type === "Orario") {
+                            rowHTML += '<div style="display:flex; gap:2px; width:100%;">';
+                            rowHTML += '<button class="cell-time-btn" onclick="openIosTimeModal(\'' + staff + '\', ' + dayIdx + ', \'start\', \'' + start + '\')">' + (start || "Inizio") + '</button>';
+                            rowHTML += '<button class="cell-time-btn" onclick="openIosTimeModal(\'' + staff + '\', ' + dayIdx + ', \'end\', \'' + end + '\')">' + (end || "Fine") + '</button>';
+                            rowHTML += '</div>';
+                        }
+                    } else {
+                        if (type === "Riposo") rowHTML += '<div class="cell-display is-riposo">Riposo</div>';
+                        else if (type === "Orario") rowHTML += '<div class="cell-display is-orario">' + ((start || end) ? (start + " - " + end) : "Orario") + '</div>';
+                        else if (type) rowHTML += '<div class="cell-display">' + type + '</div>';
+                        else rowHTML += '<div class="cell-display" style="color:#555;">-</div>';
+                    }
+
+                    rowHTML += '</div></td>';
+                }
+                rowHTML += '</tr>';
+                tbody.innerHTML += rowHTML;
+            });
+        }
+
+        function updateShiftType(staff, dayIdx, value) {
+            var weekStartIso = document.getElementById('selectWeek').value;
+
+            if (window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(weekStartIso);
+            }
+
+            if (!window.shiftsDataGlobal[weekStartIso]) {
+                window.shiftsDataGlobal[weekStartIso] = {};
+            }
+
+            if (!window.shiftsDataGlobal[weekStartIso][staff]) {
+                window.shiftsDataGlobal[weekStartIso][staff] = {};
+            }
+
+            if (!window.shiftsDataGlobal[weekStartIso][staff][dayIdx]) {
+                window.shiftsDataGlobal[weekStartIso][staff][dayIdx] = {
+                    type: "",
+                    start: "",
+                    end: ""
+                };
+            }
+
+            var shift = window.shiftsDataGlobal[weekStartIso][staff][dayIdx];
+            shift.type = value;
+
+            if (value === "Orario") {
+                if (!shift.start) shift.start = "08:00";
+                if (!shift.end) shift.end = "14:00";
+            } else {
+                shift.start = "";
+                shift.end = "";
+            }
+
+            if (window.syncSaveShifts) {
+                window.syncSaveShifts(window.shiftsDataGlobal);
+            }
+
+            renderTable();
+        }
+
+        function openIosTimeModal(staff, dayIdx, field, currentVal) {
+            activeTimeStaff = staff; activeTimeDayIdx = dayIdx; activeTimeField = field;
+            document.getElementById('iosModalTitle').innerText = (field === 'start' ? "Orario Inizio" : "Orario Fine") + " - " + staff;
+            buildWheels();
+            var parts = currentVal ? currentVal.split(':') : (field === 'start' ? ["08", "00"] : ["14", "00"]);
+            setTimeout(function() {
+                scrollToValue('wheelHours', parts[0] || "08");
+                scrollToValue('wheelMinutes', parts[1] || "00");
+            }, 50);
+            document.getElementById('iosTimeModal').classList.remove('hidden');
+        }
+
+        function buildWheels() {
+            var wheelH = document.getElementById('wheelHours');
+            var wheelM = document.getElementById('wheelMinutes');
+            wheelH.innerHTML = ""; wheelM.innerHTML = "";
+            for (var h = 0; h < 24; h++) wheelH.innerHTML += '<div class="ios-wheel-item" data-val="' + String(h).padStart(2, '0') + '">' + String(h).padStart(2, '0') + '</div>';
+            for (var m = 0; m < 60; m += 5) wheelM.innerHTML += '<div class="ios-wheel-item" data-val="' + String(m).padStart(2, '0') + '">' + String(m).padStart(2, '0') + '</div>';
+        }
+
+        function scrollToValue(wheelId, val) {
+            var wheel = document.getElementById(wheelId);
+            var item = wheel.querySelector('[data-val="' + val + '"]');
+            if (item) wheel.scrollTop = item.offsetTop - 70;
+        }
+
+        function confirmIosTime() {
+            var h = getSelectedWheelValue('wheelHours');
+            var m = getSelectedWheelValue('wheelMinutes');
+            var weekStartIso = document.getElementById('selectWeek').value;
+
+            // Quando si modifica l'orario, la settimana diventa ufficialmente quella predefinita globale
+            if (window.syncSaveCurrentWeek) {
+                window.syncSaveCurrentWeek(weekStartIso);
+            }
+
+            if (!window.shiftsDataGlobal[weekStartIso]) window.shiftsDataGlobal[weekStartIso] = {};
+            if (!window.shiftsDataGlobal[weekStartIso][activeTimeStaff]) window.shiftsDataGlobal[weekStartIso][activeTimeStaff] = {};
+            if (!window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx]) window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx] = { type: "Orario", start: "", end: "" };
+
+            window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx][activeTimeField] = h + ":" + m;
+            
+            if (window.syncSaveShifts) window.syncSaveShifts(window.shiftsDataGlobal);
+            closeIosTimeModal();
+            renderTable();
+        }
+
+        function getSelectedWheelValue(wheelId) {
+            var wheel = document.getElementById(wheelId);
+            var index = Math.round(wheel.scrollTop / 40);
+            var items = wheel.querySelectorAll('.ios-wheel-item');
+            return items[index] ? items[index].getAttribute('data-val') : "00";
+        }
+
+        function closeIosTimeModal() { document.getElementById('iosTimeModal').classList.add('hidden'); }
+
+        function handleViewToggle() {
+            if (isEditMode) {
+                isEditMode = false;
+                document.getElementById('adminActions').classList.add('hidden');
+                document.getElementById('toggleViewBtn').innerText = "Modifica (PIN)";
+                renderTable();
+            } else {
+                document.getElementById('pinModal').classList.remove('hidden');
+                document.getElementById('pinCode').value = '';
+                document.getElementById('pinCode').focus();
+            }
+        }
+
+        function closePinModal() { document.getElementById('pinModal').classList.add('hidden'); }
+
+        function verifyPin() {
+            if (document.getElementById('pinCode').value.trim() === MASTER_PIN) {
+                isEditMode = true;
+                closePinModal();
+                document.getElementById('adminActions').classList.remove('hidden');
+                document.getElementById('toggleViewBtn').innerText = "Esci da Modifica";
+                renderTable();
+            } else {
+                alert("PIN errato!");
+            }
+        }
+
+        function addStaffPrompt() {
+            var name = prompt("Nome nuovo dipendente:");
+            if (name && name.trim() !== "") {
+                if (window.staffListGlobal.indexOf(name.trim()) === -1) {
+                    window.staffListGlobal.push(name.trim());
+                    if (window.syncSaveStaff) window.syncSaveStaff(window.staffListGlobal);
+                    renderTable();
+                }
+            }
+        }
+
+        function removeStaff(name) {
+            if (confirm("Rimuovere " + name + "?")) {
+                window.staffListGlobal = window.staffListGlobal.filter(function(s) { return s !== name; });
+                if (window.syncSaveStaff) window.syncSaveStaff(window.staffListGlobal);
+                renderTable();
+            }
+        }
+
+        function shareWhatsApp() {
+            var weekSelect = document.getElementById('selectWeek');
+            var weekLabel = weekSelect.options[weekSelect.selectedIndex].text;
+            var msg = "*TURNI PINK PANTHER*\n(" + weekLabel + ")\n\n";
+            var currentWeekData = window.shiftsDataGlobal[weekSelect.value] || {};
+
+            var staffList = window.staffListGlobal.slice();
+            Object.keys(currentWeekData).forEach(function(staffName) {
+                var daysData = currentWeekData[staffName] || {};
+                var hasWorked = Object.keys(daysData).some(function(dayIdx) {
+                    var shift = daysData[dayIdx] || {};
+                    return Boolean(shift.type || shift.start || shift.end);
+                });
+                if (hasWorked && staffList.indexOf(staffName) === -1) {
+                    staffList.push(staffName);
+                }
+            });
+
+            staffList.forEach(function(staff) {
+                msg += "*" + staff + ":*\n";
+                var days = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+                for (var i = 0; i < 7; i++) {
+                    var cell = (currentWeekData[staff] && currentWeekData[staff][i]) ? currentWeekData[staff][i] : {};
+                    var val = "-";
+                    if (cell.type === "Riposo") val = "Riposo";
+                    else if (cell.type === "Orario") val = (cell.start || "00:00") + " - " + (cell.end || "00:00");
+                    else if (cell.type) val = cell.type;
+                    msg += "   " + days[i] + ": " + val + "\n";
+                }
+                msg += "\n";
+            });
+
+            window.open("https://wa.me/?text=" + encodeURIComponent(msg), '_blank');
+        }
+
+        function filterStaff() {
+            var query = document.getElementById('searchStaff').value.toLowerCase();
+            document.querySelectorAll('#tableBody tr').forEach(function(r) {
+                r.style.display = r.querySelector('.staff-name').innerText.toLowerCase().indexOf(query) !== -1 ? "" : "none";
+            });
+        }
+
+        initFilters();
+        
+        var savedWeekLocal = localStorage.getItem('pk_last_edited_week');
+        if (savedWeekLocal) {
+            applySelectedWeek(savedWeekLocal);
+        } else {
+            renderTable();
+        }
+    </script>
 </body>
 </html>
