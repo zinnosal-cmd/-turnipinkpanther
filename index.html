@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pink Panther - Gestione Turni Personale</title>
+    <title>Pink Panther - Gestione Turni</title>
     <style>
         :root {
-            --bg-color: #050505;
-            --card-bg: #121212;
-            --card-border: #222222;
+            --bg-color: #0d0d0d;
+            --card-bg: #1a1a1a;
+            --card-border: #2a2a2a;
             --accent-pink: #e65c9c;
             --text-main: #ffffff;
-            --text-secondary: #999999;
+            --text-secondary: #aaaaaa;
             --green-wa: #25d366;
             --red-riposo: #ff4d4d;
             --table-header-bg: #1f1418;
@@ -56,7 +56,7 @@
 
         p.subtitle {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .admin-toggle-btn {
@@ -78,36 +78,33 @@
             border-radius: 12px;
             padding: 15px;
             margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: space-between;
-            align-items: center;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
         }
 
         .control-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
-            flex: 1;
-            min-width: 140px;
         }
 
         label {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             font-weight: bold;
         }
 
         select, input {
-            background-color: #1a1a1a;
+            background-color: #121212;
             border: 1px solid #333;
             color: #fff;
             padding: 10px;
             border-radius: 8px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             outline: none;
+            width: 100%;
         }
 
         select:focus, input:focus {
@@ -119,7 +116,6 @@
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 20px;
-            width: 100%;
         }
 
         .btn {
@@ -133,17 +129,11 @@
             justify-content: center;
             gap: 8px;
             font-size: 0.9rem;
-            transition: opacity 0.2s;
-        }
-
-        .btn:active {
-            opacity: 0.8;
         }
 
         .btn-pink { background-color: var(--accent-pink); color: #fff; }
         .btn-green { background-color: var(--green-wa); color: #fff; }
         .btn-secondary { background-color: #262626; color: #fff; border: 1px solid #333; }
-        .btn-blue { background-color: #007bff; color: #fff; }
 
         .table-wrapper {
             width: 100%;
@@ -151,7 +141,6 @@
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
             border-radius: 12px;
-            margin-bottom: 20px;
         }
 
         table {
@@ -177,8 +166,8 @@
         td.emp-name {
             font-weight: bold;
             text-align: left;
-            background-color: #161616;
-            min-width: 130px;
+            background-color: #151515;
+            min-width: 120px;
         }
 
         .shift-cell {
@@ -191,59 +180,47 @@
         .time-inputs {
             display: flex;
             gap: 4px;
-            align-items: center;
+            justify-content: center;
         }
 
         .time-inputs input {
             padding: 4px;
             font-size: 0.75rem;
-            width: 55px;
+            width: 58px;
             text-align: center;
             border-radius: 4px;
             border: 1px solid var(--accent-pink);
+            background: #000;
         }
 
         .badge-draft {
             background: #ff9800;
             color: #000;
             font-size: 0.75rem;
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: bold;
-            margin-left: 10px;
         }
 
         .badge-published {
             background: #4caf50;
             color: #fff;
             font-size: 0.75rem;
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: bold;
-            margin-left: 10px;
         }
 
-        .del-emp-btn {
+        .del-btn {
+            color: var(--red-riposo);
             background: none;
             border: none;
-            color: var(--red-riposo);
-            cursor: pointer;
             font-weight: bold;
+            cursor: pointer;
             margin-left: 5px;
-        }
-
-        @media print {
-            body { background-color: #fff; color: #000; padding: 0; }
-            .controls-card, .action-buttons, .admin-toggle-btn, .del-emp-btn, select, input { display: none !important; }
-            .table-wrapper { border: none; }
-            table { border: 1px solid #000; }
-            th, td { border: 1px solid #000; color: #000; background: none !important; }
-            th { color: #000; font-weight: bold; }
-            .print-only-cell { display: block !important; }
         }
     </style>
 
-    <!-- Firebase App & Firestore SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
@@ -251,7 +228,7 @@
 
 <div class="container">
     <header>
-        <h1>Pink Panther</h1>
+        <h1>PINK PANTHER</h1>
         <p class="subtitle">Gestione Turni Personale <span id="statusBadge"></span></p>
         <button class="admin-toggle-btn" id="adminBtn" onclick="toggleAdmin()">Gestione Manager</button>
     </header>
@@ -278,7 +255,7 @@
     <div class="action-buttons">
         <button class="btn btn-pink admin-only" onclick="addEmployee()" style="display:none;">+ Aggiungi Dipendente</button>
         <button class="btn btn-green admin-only" id="publishBtn" onclick="publishShifts()" style="display:none;">🚀 Pubblica Turni</button>
-        <button class="btn btn-secondary" onclick="shareWhatsApp()">Invia su WhatsApp</button>
+        <button class="btn btn-green" style="background-color:#25d366; color:#fff;" onclick="shareWhatsApp()">Invia su WhatsApp</button>
         <button class="btn btn-secondary" onclick="window.print()">Stampa / PDF</button>
     </div>
 
@@ -287,18 +264,14 @@
             <thead>
                 <tr id="tableHeader">
                     <th>DIPENDENTE</th>
-                    <!-- Giorni generati dinamicamente -->
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Righe generate dinamicamente -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // Configurazione Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyDummyKeyForSecurityReasonOnly",
         authDomain: "bar-pink-panther.firebaseapp.com",
@@ -308,24 +281,19 @@
         appId: "1:1234567890:web:abcdef123456"
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     let isAdmin = false;
     let currentShifts = {};
     let employeesList = ["Salvatore", "Marco", "Gennaro", "Titti", "Maria", "Mirko", "Francesca", "Raffaela"];
-    let unsubscribeDrafts = null;
-    let unsubscribePublic = null;
+    let unsubscribe = null;
 
     const daysNames = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
     const shiftOptions = ["-", "Mattina", "Pomeriggio", "Sera", "Spezzato", "Riposo", "Orario"];
 
     window.onload = function() {
         initYearAndMonths();
-        renderTableHeader();
-        loadCurrentWeekData();
     };
 
     function toggleAdmin() {
@@ -335,7 +303,6 @@
                 isAdmin = true;
                 document.getElementById("adminBtn").innerText = "Uscita Manager";
                 document.querySelectorAll(".admin-only").forEach(el => el.style.display = "inline-flex");
-                alert("Modalità Manager Attivata!");
                 loadCurrentWeekData();
             } else if (pin !== null) {
                 alert("PIN Errato!");
@@ -355,7 +322,6 @@
         const curYear = now.getFullYear();
 
         ySelect.innerHTML = `<option value="${curYear}">${curYear}</option><option value="${curYear+1}">${curYear+1}</option>`;
-        
         const months = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
         mSelect.innerHTML = months.map((m, idx) => `<option value="${idx}" ${idx === now.getMonth() ? 'selected' : ''}>${m}</option>`).join('');
 
@@ -371,21 +337,16 @@
         const year = parseInt(document.getElementById("yearSelect").value);
         const month = parseInt(document.getElementById("monthSelect").value);
         const wSelect = document.getElementById("weekSelect");
-        
         wSelect.innerHTML = "";
         
-        // Trova i lunedì del mese
         let date = new Date(year, month, 1);
         let mondays = [];
 
         while (date.getMonth() === month) {
-            if (date.getDay() === 1) { // 1 = Lunedì
-                mondays.push(new Date(date));
-            }
+            if (date.getDay() === 1) mondays.push(new Date(date));
             date.setDate(date.getDate() + 1);
         }
 
-        // Se il mese non inizia di lunedì, prendiamo il lunedì precedente per coprire la prima settimana
         if (mondays.length === 0 || mondays[0].getDate() > 1) {
             let firstDay = new Date(year, month, 1);
             let dayOfWeek = firstDay.getDay();
@@ -397,7 +358,6 @@
         mondays.forEach((mon) => {
             let sun = new Date(mon);
             sun.setDate(mon.getDate() + 6);
-            
             let label = `Dal ${mon.getDate()} ${getShortMonth(mon.getMonth())} al ${sun.getDate()} ${getShortMonth(sun.getMonth())}`;
             let docId = `${mon.getFullYear()}_W${getWeekNumber(mon)}`;
             
@@ -405,8 +365,11 @@
             opt.value = docId;
             opt.innerText = label;
             opt.dataset.monday = mon.toISOString();
+            if (docId === "2026_W39") opt.selected = true; // Seleziona di default la settimana attuale
             wSelect.appendChild(opt);
         });
+
+        loadCurrentWeekData();
     }
 
     function getShortMonth(mIdx) {
@@ -417,8 +380,7 @@
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
         var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-        var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-        return weekNo;
+        return Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
     }
 
     function renderTableHeader() {
@@ -427,7 +389,6 @@
         headerTr.innerHTML = '<th>DIPENDENTE</th>';
 
         if (!wSelect.selectedOptions.length) return;
-        
         let monStr = wSelect.selectedOptions[0].dataset.monday;
         let mon = monStr ? new Date(monStr) : new Date();
 
@@ -443,34 +404,20 @@
         const docId = document.getElementById("weekSelect").value;
         const statusBadge = document.getElementById("statusBadge");
 
-        if (unsubscribeDrafts) unsubscribeDrafts();
-        if (unsubscribePublic) unsubscribePublic();
+        if (unsubscribe) unsubscribe();
 
-        if (isAdmin) {
-            // Modalità Manager: Ascolta DRAFTS
-            unsubscribeDrafts = db.collection("shiftsData_drafts").doc(docId).onSnapshot(doc => {
-                if (doc.exists) {
-                    currentShifts = doc.data().shifts || {};
-                    statusBadge.innerHTML = '<span class="badge-draft">BOZZA (Manager)</span>';
-                } else {
-                    currentShifts = {};
-                    statusBadge.innerHTML = '<span class="badge-draft">NUOVA BOZZA</span>';
-                }
-                renderTable();
-            });
-        } else {
-            // Modalità Dipendente: Ascolta PUBLIC
-            unsubscribePublic = db.collection("shiftsData").doc(docId).onSnapshot(doc => {
-                if (doc.exists) {
-                    currentShifts = doc.data().shifts || {};
-                    statusBadge.innerHTML = '<span class="badge-published">PUBBLICATO</span>';
-                } else {
-                    currentShifts = {};
-                    statusBadge.innerHTML = '<span style="color:#888; font-size:0.8rem;">(Non ancora pubblicato)</span>';
-                }
-                renderTable();
-            });
-        }
+        const collectionName = isAdmin ? "shiftsData_drafts" : "shiftsData";
+
+        unsubscribe = db.collection(collectionName).doc(docId).onSnapshot(doc => {
+            if (doc.exists) {
+                currentShifts = doc.data().shifts || {};
+                statusBadge.innerHTML = isAdmin ? '<span class="badge-draft">BOZZA (Manager)</span>' : '<span class="badge-published">PUBBLICATO</span>';
+            } else {
+                currentShifts = {};
+                statusBadge.innerHTML = isAdmin ? '<span class="badge-draft">NUOVA BOZZA</span>' : '<span style="color:#888;">(Non pubblicato)</span>';
+            }
+            renderTable();
+        });
     }
 
     function renderTable() {
@@ -482,13 +429,13 @@
             tr.className = "emp-row";
             tr.dataset.name = emp.toLowerCase();
 
-            let tdName = `<td class="emp-name">${emp} ${isAdmin ? `<button class="del-emp-btn" onclick="removeEmployee('${emp}')">(X)</button>` : ''}</td>`;
+            let tdName = `<td class="emp-name">${emp} ${isAdmin ? `<button class="del-btn" onclick="removeEmployee('${emp}')">(X)</button>` : ''}</td>`;
             tr.innerHTML += tdName;
 
             for (let i = 0; i < 7; i++) {
                 let cellData = (currentShifts[emp] && currentShifts[emp][i]) ? currentShifts[emp][i] : { type: "-", start: "", end: "" };
-                
                 let tdContent = "";
+
                 if (isAdmin) {
                     tdContent = `<div class="shift-cell">
                         <select onchange="updateShift('${emp}', ${i}, 'type', this.value)">
@@ -506,8 +453,8 @@
                     if (cellData.type === 'Orario' && cellData.start && cellData.end) {
                         displayTxt = `${cellData.start} - ${cellData.end}`;
                     }
-                    let color = cellData.type === 'Riposo' ? 'color: var(--red-riposo); font-weight:bold;' : '';
-                    tdContent = `<span style="${color}">${displayTxt}</span>`;
+                    let style = cellData.type === 'Riposo' ? 'color: var(--red-riposo); font-weight:bold;' : '';
+                    tdContent = `<span style="${style}">${displayTxt}</span>`;
                 }
                 tr.innerHTML += `<td>${tdContent}</td>`;
             }
@@ -530,15 +477,13 @@
 
     function publishShifts() {
         const docId = document.getElementById("weekSelect").value;
-        if (!confirm("Vuoi pubblicare i turni di questa settimana per tutti i dipendenti?")) return;
+        if (!confirm("Vuoi pubblicare questi turni per i dipendenti?")) return;
 
         db.collection("shiftsData").doc(docId).set({
             shifts: currentShifts,
             publishedAt: firebase.firestore.FieldValue.serverTimestamp()
         }).then(() => {
-            alert("Turni Pubblicati con successo!");
-        }).catch(err => {
-            alert("Errore nella pubblicazione: " + err.message);
+            alert("Turni Pubblicati!");
         });
     }
 
