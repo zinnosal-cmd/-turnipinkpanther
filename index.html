@@ -317,12 +317,14 @@
             border-radius: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;
         }
         .btn-action.primary { background: var(--accent-pink); border-color: var(--accent-pink); }
+        .btn-action.publish { background: #ff9800; border-color: #ff9800; color: #000; }
         .btn-action.whatsapp { background: #1f2c24; color: var(--green-wa); border-color: var(--green-wa); }
 
         .status-badge {
             font-size: 11px; padding: 4px 8px; border-radius: 10px; background: #222; color: #aaa; margin-left: 10px;
         }
         .status-badge.online { background: #132a1c; color: var(--green-wa); }
+        .status-badge.draft { background: #332200; color: #ff9800; }
     </style>
 </head>
 <body>
@@ -381,6 +383,7 @@
     <!-- AZIONI GESTORE -->
     <div id="adminActions" class="action-bar hidden">
         <button class="btn-action primary" onclick="addStaffPrompt()">+ Aggiungi Dipendente</button>
+        <button class="btn-action publish" onclick="publishShifts()">🚀 Pubblica Turni</button>
         <button class="btn-action whatsapp" onclick="shareWhatsApp()">Invia su WhatsApp</button>
         <button class="btn-action" onclick="window.print()">Stampa / PDF</button>
     </div>
@@ -427,7 +430,7 @@
         </div>
     </div>
 
-    <!-- SDK FIREBASE FIRESTORE (Modular v9/v10) -->
+    <!-- SDK FIREBASE FIRESTORE (Modular v10) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -444,19 +447,31 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const docShifts = doc(db, 'app_data', 'shiftsData');
+        const docShiftsPublished = doc(db, 'app_data', 'shiftsData');
+        const docShiftsDraft = doc(db, 'app_data', 'shiftsData_drafts');
         const docStaff = doc(db, 'app_data', 'staffList');
         const docConfig = doc(db, 'app_data', 'config');
 
-        onSnapshot(docShifts, (snapshot) => {
+        // Ascolto Turni Pubblicati (Dipendenti)
+        onSnapshot(docShiftsPublished, (snapshot) => {
             if (snapshot.exists()) {
-                const data = snapshot.data();
-                window.shiftsDataGlobal = data;
-                localStorage.setItem('pk_shifts_data_v3', JSON.stringify(data));
+                window.shiftsPublishedGlobal = snapshot.data();
+                if (!window.isEditMode) {
+                    window.shiftsDataGlobal = window.shiftsPublishedGlobal;
+                    window.renderTable();
+                }
             }
-            document.getElementById('cloudStatus').innerText = "Firestore Live";
-            document.getElementById('cloudStatus').classList.add('online');
-            window.renderTable();
+        });
+
+        // Ascolto Turni Bozza (Manager)
+        onSnapshot(docShiftsDraft, (snapshot) => {
+            if (snapshot.exists()) {
+                window.shiftsDraftGlobal = snapshot.data();
+                if (window.isEditMode) {
+                    window.shiftsDataGlobal = window.shiftsDraftGlobal;
+                    window.renderTable();
+                }
+            }
         });
 
         onSnapshot(docStaff, (snapshot) => {
@@ -473,10 +488,8 @@
         onSnapshot(docConfig, (snapshot) => {
             if (snapshot.exists()) {
                 const cfg = snapshot.data();
-
                 if (cfg && cfg.selectedWeek) {
                     localStorage.setItem('pk_last_edited_week', cfg.selectedWeek);
-
                     if (window.applySelectedWeek) {
                         window.applySelectedWeek(cfg.selectedWeek);
                     }
@@ -484,8 +497,18 @@
             }
         });
 
-        window.syncSaveShifts = async function(data) {
-            try { await setDoc(docShifts, data); } catch (e) { console.error(e); }
+        window.syncSaveShiftsDraft = async function(data) {
+            try { await setDoc(docShiftsDraft, data); } catch (e) { console.error(e); }
+        };
+
+        window.publishShiftsToCloud = async function() {
+            try {
+                await setDoc(docShiftsPublished, window.shiftsDraftGlobal);
+                alert("Turni pubblicati con successo!");
+            } catch (e) {
+                console.error(e);
+                alert("Errore durante la pubblicazione.");
+            }
         };
 
         window.syncSaveStaff = async function(list) {
@@ -500,10 +523,13 @@
     <script>
         var MASTER_PIN = "1818";
         var isEditMode = false;
+        window.isEditMode = false;
         var defaultStaff = ["Salvatore", "Marco", "Gennaro", "Titti", "Raffaella", "Maria", "Mirko"];
 
         window.staffListGlobal = JSON.parse(localStorage.getItem('pk_staff_list_v3')) || defaultStaff;
-        window.shiftsDataGlobal = JSON.parse(localStorage.getItem('pk_shifts_data_v3')) || {};
+        window.shiftsDataGlobal = {};
+        window.shiftsDraftGlobal = {};
+        window.shiftsPublishedGlobal = {};
 
         var activeTimeStaff = null;
         var activeTimeDayIdx = null;
@@ -575,11 +601,8 @@
 
         function onWeekChange() {
             var selectedWeek = document.getElementById('selectWeek').value;
-
-            // Salva solo in locale per chi sta semplicemente guardando i turni
             localStorage.setItem('pk_last_edited_week', selectedWeek);
 
-            // Sincronizza nel Cloud per tutti SOLO SE si è sbloccata la modalità Gestore
             if (isEditMode && window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(selectedWeek);
             }
@@ -611,6 +634,15 @@
         window.applySelectedWeek = applySelectedWeek;
 
         function renderTable() {
+            var cloudBadge = document.getElementById('cloudStatus');
+            if (isEditMode) {
+                cloudBadge.innerText = "BOZZA (Manager)";
+                cloudBadge.className = "status-badge draft";
+            } else {
+                cloudBadge.innerText = "PUBBLICATO";
+                cloudBadge.className = "status-badge online";
+            }
+
             var weekSelect = document.getElementById('selectWeek');
             var weekStartIso = weekSelect.value;
             if (!weekStartIso) return;
@@ -629,23 +661,13 @@
             }
 
             var currentWeekData = window.shiftsDataGlobal[weekStartIso] || {};
-
-            // Dipendenti attualmente presenti
             var staffList = window.staffListGlobal.slice();
 
-            // Recupera anche gli extra o gli ex dipendenti che avevano turni
-            // nella settimana che stiamo visualizzando
             Object.keys(currentWeekData).forEach(function(staffName) {
                 var daysData = currentWeekData[staffName] || {};
-
                 var hasWorked = Object.keys(daysData).some(function(dayIdx) {
                     var shift = daysData[dayIdx] || {};
-
-                    return Boolean(
-                        shift.type ||
-                        shift.start ||
-                        shift.end
-                    );
+                    return Boolean(shift.type || shift.start || shift.end);
                 });
 
                 if (hasWorked && staffList.indexOf(staffName) === -1) {
@@ -706,23 +728,23 @@
                 window.syncSaveCurrentWeek(weekStartIso);
             }
 
-            if (!window.shiftsDataGlobal[weekStartIso]) {
-                window.shiftsDataGlobal[weekStartIso] = {};
+            if (!window.shiftsDraftGlobal[weekStartIso]) {
+                window.shiftsDraftGlobal[weekStartIso] = {};
             }
 
-            if (!window.shiftsDataGlobal[weekStartIso][staff]) {
-                window.shiftsDataGlobal[weekStartIso][staff] = {};
+            if (!window.shiftsDraftGlobal[weekStartIso][staff]) {
+                window.shiftsDraftGlobal[weekStartIso][staff] = {};
             }
 
-            if (!window.shiftsDataGlobal[weekStartIso][staff][dayIdx]) {
-                window.shiftsDataGlobal[weekStartIso][staff][dayIdx] = {
+            if (!window.shiftsDraftGlobal[weekStartIso][staff][dayIdx]) {
+                window.shiftsDraftGlobal[weekStartIso][staff][dayIdx] = {
                     type: "",
                     start: "",
                     end: ""
                 };
             }
 
-            var shift = window.shiftsDataGlobal[weekStartIso][staff][dayIdx];
+            var shift = window.shiftsDraftGlobal[weekStartIso][staff][dayIdx];
             shift.type = value;
 
             if (value === "Orario") {
@@ -733,10 +755,11 @@
                 shift.end = "";
             }
 
-            if (window.syncSaveShifts) {
-                window.syncSaveShifts(window.shiftsDataGlobal);
+            if (window.syncSaveShiftsDraft) {
+                window.syncSaveShiftsDraft(window.shiftsDraftGlobal);
             }
 
+            window.shiftsDataGlobal = window.shiftsDraftGlobal;
             renderTable();
         }
 
@@ -771,20 +794,28 @@
             var m = getSelectedWheelValue('wheelMinutes');
             var weekStartIso = document.getElementById('selectWeek').value;
 
-            // Quando si modifica l'orario, la settimana diventa ufficialmente quella predefinita globale
             if (window.syncSaveCurrentWeek) {
                 window.syncSaveCurrentWeek(weekStartIso);
             }
 
-            if (!window.shiftsDataGlobal[weekStartIso]) window.shiftsDataGlobal[weekStartIso] = {};
-            if (!window.shiftsDataGlobal[weekStartIso][activeTimeStaff]) window.shiftsDataGlobal[weekStartIso][activeTimeStaff] = {};
-            if (!window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx]) window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx] = { type: "Orario", start: "", end: "" };
+            if (!window.shiftsDraftGlobal[weekStartIso]) window.shiftsDraftGlobal[weekStartIso] = {};
+            if (!window.shiftsDraftGlobal[weekStartIso][activeTimeStaff]) window.shiftsDraftGlobal[weekStartIso][activeTimeStaff] = {};
+            if (!window.shiftsDraftGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx]) window.shiftsDraftGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx] = { type: "Orario", start: "", end: "" };
 
-            window.shiftsDataGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx][activeTimeField] = h + ":" + m;
+            window.shiftsDraftGlobal[weekStartIso][activeTimeStaff][activeTimeDayIdx][activeTimeField] = h + ":" + m;
             
-            if (window.syncSaveShifts) window.syncSaveShifts(window.shiftsDataGlobal);
+            if (window.syncSaveShiftsDraft) window.syncSaveShiftsDraft(window.shiftsDraftGlobal);
             closeIosTimeModal();
+            window.shiftsDataGlobal = window.shiftsDraftGlobal;
             renderTable();
+        }
+
+        function publishShifts() {
+            if (confirm("Vuoi pubblicare ufficialmente la bozza per tutti i dipendenti?")) {
+                if (window.publishShiftsToCloud) {
+                    window.publishShiftsToCloud();
+                }
+            }
         }
 
         function getSelectedWheelValue(wheelId) {
@@ -799,6 +830,8 @@
         function handleViewToggle() {
             if (isEditMode) {
                 isEditMode = false;
+                window.isEditMode = false;
+                window.shiftsDataGlobal = window.shiftsPublishedGlobal;
                 document.getElementById('adminActions').classList.add('hidden');
                 document.getElementById('toggleViewBtn').innerText = "Modifica (PIN)";
                 renderTable();
@@ -814,6 +847,8 @@
         function verifyPin() {
             if (document.getElementById('pinCode').value.trim() === MASTER_PIN) {
                 isEditMode = true;
+                window.isEditMode = true;
+                window.shiftsDataGlobal = window.shiftsDraftGlobal;
                 closePinModal();
                 document.getElementById('adminActions').classList.remove('hidden');
                 document.getElementById('toggleViewBtn').innerText = "Esci da Modifica";
